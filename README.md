@@ -1,2 +1,2 @@
-# OpenMic
-WebRTC video conferencing/streaming application
+# Video Chat
+Simple WebRTC video conferencing application

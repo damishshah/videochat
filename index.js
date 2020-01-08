@@ -8,8 +8,8 @@ const fs = require('fs');
 
 // TODO: Get a proper cert
 const options = {
-  key: fs.readFileSync('privatekey.pem'),
-  cert: fs.readFileSync('publiccert.pem')
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem')
 };
 
 var fileServer = new(nodeStatic.Server)();
@@ -48,7 +48,6 @@ io.sockets.on('connection', function(socket) {
       socket.join(room);
       log('Client ID ' + socket.id + ' created room ' + room);
       socket.emit('created', room, socket.id);
-
     } else if (numClients === 1) {
       log('Client ID ' + socket.id + ' joined room ' + room);
       io.sockets.in(room).emit('join', room);
@@ -64,15 +63,16 @@ io.sockets.on('connection', function(socket) {
     var ifaces = os.networkInterfaces();
     for (var dev in ifaces) {
       ifaces[dev].forEach(function(details) {
-        if (details.family === 'IPv4' && details.address !== '192.168.1.100') {
+        if (details.family === 'IPv4' && details.address !== '192.168.1.112') {
           socket.emit('ipaddr', details.address);
         }
       });
     }
   });
 
-  socket.on('bye', function(){
+  socket.on('bye', function(room){
     console.log('received bye');
+    socket.leave(room)
   });
 
 });
