@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8"/>
     <title>Video Chat</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width">
 
     <link rel="stylesheet" href="/css/main.css" />
   </head>
 
   <body>
-    <h1>Video Chat With WebRTC</h1>
+    <h1 style="display: inline;">Video Chat With WebRTC</h1>
 
-    <div id="videos">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay muted></video>
-    </div>
-
-    <div class="messaging">
-      <div id="dataChannelReceive">
-
+    <div class="content">
+      <div id="videos" style="position: relative; width: 75vw; margin:10px; float: left;" >
+        <video id="remoteVideo" style="width: 100%; background-color: black;" autoplay>Your browser does not support HTML5 video.</video>
+        <div id="nestedVideos">
+          <video id="localVideo" autoplay muted>Your browser does not support HTML5 video.</video>
+        </div>
       </div>
-      <form class="footer" onsubmit="sendData()">
-        <input id="dataChannelSend" type="text" placeholder="Your message..">
-        <button type="submit">Send</button>
-      </form>
-    </div>
 
-    <template data-template="message">
-      <div class="message">
-        <div class="message__name"></div>
-        <div class="message__bubble"></div>
+      <div id="test"  style="position: relative; margin:10px">
+        <div style="font-style: oblique;">
+          Your name: <input id="name" type="text" placeholder="Enter your name here">
+        </div>
+        <div class="messaging">
+          <div id="dataChannelReceive" class="messages">
+
+          </div>
+          <form class="footer" onsubmit="sendData()">
+            <input id="dataChannelSend" type="text" placeholder="Your message..">
+            <button type="submit">Send</button>
+          </form>
+        </div>
       </div>
-    </template>
 
+      <template data-template="message">
+        <div class="message">
+          <div class="message__name"></div>
+          <div class="message__bubble"></div>
+        </div>
+      </template>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 

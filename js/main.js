@@ -8,8 +8,10 @@ var localStream;
 var remoteStream;
 var turnReady;
 var dataChannel;
+var lastMessageName;
 var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
+var nameInput = document.getElementById('name');
 
 var pcConfig = {
   'iceServers': [{
@@ -290,15 +292,43 @@ function setupDataChannel() {
 }
 
 function sendData() {
-  var data = dataChannelSend.value;
-  dataChannel.send(data);
+  const data = {
+    name: nameInput.value,
+    content: dataChannelSend.value
+  }
+  dataChannel.send(JSON.stringify(data));
   console.log('Sent Data: ' + data);
   dataChannelSend.value = '';
+  insertMessageToDOM(data, true);
 }
 
 function onReceiveMessageCallback(event) {
   console.log('Received Message: ' + event.data);
-  dataChannelReceive.innerHTML += event.data;
+  insertMessageToDOM(JSON.parse(event.data), false);
+}
+
+function insertMessageToDOM(options, isFromMe) {
+  const template = document.querySelector('template[data-template="message"]');
+  const nameEl = template.content.querySelector('.message__name');
+  if (options.name && (lastMessageName === null || lastMessageName !== options.name)) {
+    lastMessageName = options.name;
+    nameEl.innerText = options.name;
+  } else {
+    nameEl.innerText = null
+  }
+  template.content.querySelector('.message__bubble').innerText = options.content;
+  const clone = document.importNode(template.content, true);
+  const messageEl = clone.querySelector('.message');
+  if (isFromMe) {
+    messageEl.classList.add('message--mine');
+  } else {
+    messageEl.classList.add('message--theirs');
+  }
+
+  dataChannelReceive.appendChild(clone);
+
+  // Scroll to bottom
+  dataChannelReceive.scrollTop = dataChannelReceive.scrollHeight - dataChannelReceive.clientHeight;
 }
 
 window.onbeforeunload = function() {
