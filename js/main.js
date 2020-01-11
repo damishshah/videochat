@@ -4,6 +4,7 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 var pc;
+var pcArray = [];
 var localStream;
 var remoteStream;
 var turnReady;
@@ -78,7 +79,7 @@ socket.on('message', function(message) {
   if (message === 'got user media') {
     maybeStart();
   } else if (message.type === 'offer') {
-    if (!isInitiator && !isStarted) {
+    if (isInitiator && !isStarted) {
       maybeStart();
     }
     pc.setRemoteDescription(new RTCSessionDescription(message));
@@ -113,8 +114,9 @@ function gotStream(stream) {
   localStream = stream;
   localVideo.srcObject = stream;
   sendMessage('got user media');
-  if (isInitiator) {
-    maybeStart();
+  if (!isInitiator) {
+    // Sometimes it takes longer to get the local media than the socket takes to join the room
+    maybeStart()
   }
 }
 
@@ -138,18 +140,24 @@ function maybeStart() {
     createPeerConnection();
     pc.addStream(localStream);
     isStarted = true;
+    console.log('isInitiator', isInitiator);
     if (isInitiator) {
       createDataChannel();
       setupDataChannel();
-    }
-    else {
+
       pc.ondatachannel = event => {
         dataChannel = event.channel;
         setupDataChannel();
       }  
     }
-    console.log('isInitiator', isInitiator);
-    if (isInitiator) {
+    else {
+      createDataChannel();
+      setupDataChannel();
+      pc.ondatachannel = event => {
+        dataChannel = event.channel;
+        setupDataChannel();
+      }  
+
       doCall();
     }
   }
@@ -159,7 +167,7 @@ function createPeerConnection() {
   try {
     pc = new RTCPeerConnection(pcConfig);
     pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
+    pc.ontrack = handleRemoteStreamAdded;
     pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
@@ -254,8 +262,7 @@ function onCreateSessionDescriptionError(error) {
 
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
-  remoteStream = event.stream;
-  remoteVideo.srcObject = remoteStream;
+  remoteVideo.srcObject = event.streams[0];
 }
 
 function handleRemoteStreamRemoved(event) {
@@ -297,7 +304,7 @@ function sendData() {
     content: dataChannelSend.value
   }
   dataChannel.send(JSON.stringify(data));
-  console.log('Sent Data: ' + data);
+  console.log('Sent Data: ' + data['content']);
   dataChannelSend.value = '';
   insertMessageToDOM(data, true);
 }

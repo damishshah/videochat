@@ -18,6 +18,7 @@ var app = https.createServer(options, function(req, res) {
 }).listen(8080);
 
 var io = socketIO.listen(app);
+// TODO: Implement proper cors headers
 io.set('origins', '*:*');
 io.sockets.on('connection', function(socket) {
 
@@ -42,19 +43,24 @@ io.sockets.on('connection', function(socket) {
 
     var clientsInRoom = io.sockets.adapter.rooms[room];
     var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
-    log('Room ' + room + ' now has ' + numClients + ' client(s)');
+    if (numClients === 0) {
+      log('Room ' + room + ' does not yet exist');
+    } else {
+      log('Room ' + room + ' currently has ' + numClients + ' client(s)');
+    }
+    var maxClients = 3;
 
     if (numClients === 0) {
       socket.join(room);
       log('Client ID ' + socket.id + ' created room ' + room);
       socket.emit('created', room, socket.id);
-    } else if (numClients === 1) {
+    } else if (numClients > 0) {
       log('Client ID ' + socket.id + ' joined room ' + room);
       io.sockets.in(room).emit('join', room);
       socket.join(room);
       socket.emit('joined', room, socket.id);
       io.sockets.in(room).emit('ready');
-    } else { // max two clients
+    } else if (numClients > maxClients) {
       socket.emit('full', room);
     }
   });
@@ -63,7 +69,7 @@ io.sockets.on('connection', function(socket) {
     var ifaces = os.networkInterfaces();
     for (var dev in ifaces) {
       ifaces[dev].forEach(function(details) {
-        if (details.family === 'IPv4' && details.address !== '192.168.1.112') {
+        if (details.family === 'IPv4' && details.address !== '192.168.1.135') {
           socket.emit('ipaddr', details.address);
         }
       });
