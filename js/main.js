@@ -3,13 +3,14 @@
 var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
-var pc;
-var pcArray = [];
+var peerConnections = {};
+var dataChannels = {};
 var localStream;
-var remoteStream;
-var turnReady;
-var dataChannel;
 var lastMessageName;
+var membersAtTimeOfJoining;
+
+var localVideo = document.querySelector('#localVideo');
+var remoteVideo = document.querySelector('#remoteVideo');
 var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
 var nameInput = document.getElementById('name');
@@ -20,7 +21,7 @@ var pcConfig = {
   }]
 };
 
-// Set up audio and video regardless of what devices are present.
+// Currently sets up audio and video regardless of what devices are present.
 var sdpConstraints = {
   offerToReceiveAudio: true,
   offerToReceiveVideo: true
@@ -31,36 +32,74 @@ if (!room) {
   room = window.location.hash = randomToken();
 }
 
+// --- Handle socket setup ---
+
 var socket = io.connect();
 
 socket.on('created', function(room, clientId) {
   console.log('Created room', room, '- my client ID is', clientId);
   isInitiator = true;
+  setupUserMedia();
 });
 
-// TODO: Display some kind of nice error message for the user.
 socket.on('full', function(room) {
   console.log('Room ' + room + ' is full');
+  alert('Sorry! This room is full, please try again');
 });
 
 socket.on('join', function (room) {
   console.log('Another peer made a request to join room ' + room);
-  console.log('This peer is the initiator of room ' + room + '!');
   isChannelReady = true;
 });
 
 socket.on('joined', function(room) {
-  console.log('joined: ' + room);
+  console.log('joined: ' + room.name);
+  console.log('members: ' + room.members);
+  membersAtTimeOfJoining = room.members;
   isChannelReady = true;
+  setupUserMedia();
 });
 
 socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
+// This client receives a message
+socket.on('message', function(message) {
+  console.log('Client received message:', message);
+  if (message.content.type === 'offer') {
+    // New client connections are responsible for making offers to the existing clients
+    peerConnections[message.socketId] = createPeerConnection();
+    isStarted = true;
+    peerConnections[message.socketId].setRemoteDescription(new RTCSessionDescription(message.content));
+    peerConnections[message.socketId].ondatachannel = function (event) {
+      console.log("Data channel for socket: " + message.socketId + " was setup!")
+      setupDataChannel(event.channel);
+      dataChannels[message.socketId] = event.channel;
+    };
+    console.log("Set offer from socket id: " + message.socketId);
+    doAnswer(message.socketId);  
+  } else if (message.content.type === 'answer' && isStarted) {
+    peerConnections[message.socketId].setRemoteDescription(new RTCSessionDescription(message.content));
+    console.log("Set answer from socket id: " + message.socketId);
+    console.log(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
+  } else if (message.content.type === 'candidate' && isStarted) {
+    var candidate = new RTCIceCandidate({
+      sdpMLineIndex: message.content.label,
+      candidate: message.content.candidate
+    });
+    peerConnections[message.socketId].addIceCandidate(candidate);
+    console.log(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
+  } else if (message.content === 'bye' && isStarted) {
+    handleRemoteHangup(message.socketId);
+  }
+});
+
 socket.on('ipaddr', function(ipaddr) {
   console.log('Server IP address is: ' + ipaddr);
 });
+
+// --- Start client-side code ---
 
 socket.emit('create or join', room);
 
@@ -73,118 +112,53 @@ function sendMessage(message) {
   socket.emit('message', message);
 }
 
-// This client receives a message
-socket.on('message', function(message) {
-  console.log('Client received message:', message);
-  if (message === 'got user media') {
-    maybeStart();
-  } else if (message.type === 'offer') {
-    if (isInitiator && !isStarted) {
-      maybeStart();
-    }
-    pc.setRemoteDescription(new RTCSessionDescription(message));
-    doAnswer();
-  } else if (message.type === 'answer' && isStarted) {
-    pc.setRemoteDescription(new RTCSessionDescription(message));
-  } else if (message.type === 'candidate' && isStarted) {
-    var candidate = new RTCIceCandidate({
-      sdpMLineIndex: message.label,
-      candidate: message.candidate
-    });
-    pc.addIceCandidate(candidate);
-  } else if (message === 'bye' && isStarted) {
-    handleRemoteHangup();
-  }
-});
+function messagePeer(socketId, message) {
+  console.log('Client sending message to peer ' + socketId + ': ', message )
+  socket.emit('messagePeer', {recipient: socketId, content: message})
+}
 
-var localVideo = document.querySelector('#localVideo');
-var remoteVideo = document.querySelector('#remoteVideo');
+function setupUserMedia() {
+  navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: true
+  })
+  .then(gotStream)
+  .catch(function (e) {
+    alert('getUserMedia() error: ' + e.name + ' ' + e.message);
+  });
+}
 
-navigator.mediaDevices.getUserMedia({
-  audio: true,
-  video: true
-})
-.then(gotStream)
-.catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
-});
-
+// TODO: Decouple getting local user media from joining room
 function gotStream(stream) {
   console.log('Adding local stream.');
   localStream = stream;
   localVideo.srcObject = stream;
-  sendMessage('got user media');
   if (!isInitiator) {
-    // Sometimes it takes longer to get the local media than the socket takes to join the room
-    maybeStart()
-  }
-}
-
-var constraints = {
-  video: true
-};
-
-console.log('Getting user media with constraints', constraints);
-
-// TODO: Configure and add a TURN server
-// if (location.hostname !== '192.168.1.100') {
-//   requestTurn(
-//     'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
-//   );
-// }
-
-function maybeStart() {
-  console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
-  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
-    console.log('>>>>>> creating peer connection');
-    createPeerConnection();
-    pc.addStream(localStream);
+    for (var i=0; i<membersAtTimeOfJoining.length; i++) {
+      var currentMember = membersAtTimeOfJoining[i]
+      peerConnections[currentMember] = createPeerConnection();
+      // var dataChannel = createDataChannel(peerConnections[membersAtTimeOfJoining[i]]);
+      var dataChannel = peerConnections[currentMember].createDataChannel('chat');
+      setupDataChannel(dataChannel);
+      dataChannels[currentMember] = dataChannel;
+      doCall(currentMember);
+    }
     isStarted = true;
-    console.log('isInitiator', isInitiator);
-    if (isInitiator) {
-      createDataChannel();
-      setupDataChannel();
-
-      pc.ondatachannel = event => {
-        dataChannel = event.channel;
-        setupDataChannel();
-      }  
-    }
-    else {
-      createDataChannel();
-      setupDataChannel();
-      pc.ondatachannel = event => {
-        dataChannel = event.channel;
-        setupDataChannel();
-      }  
-
-      doCall();
-    }
   }
 }
 
 function createPeerConnection() {
   try {
-    pc = new RTCPeerConnection(pcConfig);
+    var pc = new RTCPeerConnection(pcConfig);
+    pc.addStream(localStream);
     pc.onicecandidate = handleIceCandidate;
     pc.ontrack = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
+    pc.onremovetrack = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
+    return pc;
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
     alert('Cannot create RTCPeerConnection object.');
-    return;
-  }
-}
-
-function createDataChannel() {
-  try {
-    var dataConstraint = null;
-    dataChannel = pc.createDataChannel('chat', dataConstraint)
-    console.log('Created RTCDataChannel')
-  } catch (e) {
-    console.log('Failed to create RTCDataChannel, exception: ' + e.message);
-    alert('Cannot create RTCDataChannel.');
     return;
   }
 }
@@ -203,99 +177,56 @@ function handleIceCandidate(event) {
   }
 }
 
+function doCall(id) {
+  console.log('Sending offer to peer');
+  peerConnections[id].createOffer(sdpConstraints).then(function(offer) {
+    return peerConnections[id].setLocalDescription(offer);
+  }).then(function() {
+    messagePeer(id, peerConnections[id].localDescription);
+  }).catch(handleCreateOfferError);
+}
+
 function handleCreateOfferError(event) {
   console.log('createOffer() error: ', event);
 }
 
-function doCall() {
-  console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
-}
-
-function doAnswer() {
+function doAnswer(id) {
   console.log('Sending answer to peer.');
-  pc.createAnswer().then(
-    setLocalAndSendMessage,
-    onCreateSessionDescriptionError
-  );
-}
-
-function setLocalAndSendMessage(sessionDescription) {
-  pc.setLocalDescription(sessionDescription);
-  console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sendMessage(sessionDescription);
+  peerConnections[id].createAnswer().then(function(answer) {
+    return peerConnections[id].setLocalDescription(answer)
+  }).then(function() {
+    messagePeer(id, peerConnections[id].localDescription);
+  }).catch(onCreateSessionDescriptionError);
 }
 
 function onCreateSessionDescriptionError(error) {
   console.log('Failed to create session description: ' + error.toString());
 }
 
-// TODO: Configure and add a TURN server
-// function requestTurn(turnURL) {
-//   var turnExists = false;
-//   for (var i in pcConfig.iceServers) {
-//     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
-//       turnExists = true;
-//       turnReady = true;
-//       break;
-//     }
-//   }
-//   if (!turnExists) {
-//     console.log('Getting TURN server from ', turnURL);
-//     // No TURN server. Get one from computeengineondemand.appspot.com:
-//     var xhr = new XMLHttpRequest();
-//     xhr.onreadystatechange = function() {
-//       if (xhr.readyState === 4 && xhr.status === 200) {
-//         var turnServer = JSON.parse(xhr.responseText);
-//         console.log('Got TURN server: ', turnServer);
-//         pcConfig.iceServers.push({
-//           'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
-//           'credential': turnServer.password
-//         });
-//         turnReady = true;
-//       }
-//     };
-//     xhr.open('GET', turnURL, true);
-//     xhr.send();
-//   }
-// }
-
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
   remoteVideo.srcObject = event.streams[0];
 }
 
-function handleRemoteStreamRemoved(event) {
-  console.log('Remote stream removed. Event: ', event);
-  remoteVideo.srcObject.remove
+// --- Functions related to data channels & messaging ---
+
+function createDataChannel(peerConnection) {
+  try {
+    console.log('Created RTCDataChannel')
+    return peerConnection.createDataChannel('chat')
+  } catch (e) {
+    console.log('Failed to create RTCDataChannel, exception: ' + e.message);
+    alert('Cannot create RTCDataChannel.');
+    return;
+  }
 }
 
-function hangup() {
-  console.log('Hanging up.');
-  stop();
-  sendMessage('bye');
-}
-
-function handleRemoteHangup() {
-  console.log('Session terminated.');
-  stop();
-  isInitiator = true;
-}
-
-function stop() {
-  console.log('Stopping stream.')
-  isStarted = false;
-  pc.close();
-  pc = null;
-}
-
-function randomToken() {
-  return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
-}
-
-function setupDataChannel() {
+function setupDataChannel(dataChannel) {
   console.log('Setup Data Channel');
   dataChannel.onmessage = onReceiveMessageCallback;
+  dataChannel.onerror = (error) => {
+    console.log("Data Channel Error:", error);
+  };
 }
 
 function sendData() {
@@ -303,8 +234,16 @@ function sendData() {
     name: nameInput.value,
     content: dataChannelSend.value
   }
-  dataChannel.send(JSON.stringify(data));
-  console.log('Sent Data: ' + data['content']);
+  var didSendMessage = false;
+  for (var dc in dataChannels) {
+    try {
+      dataChannels[dc].send(JSON.stringify(data));
+      didSendMessage = true;  
+    } catch (e) {
+      console.error('Error while trying to send message: ' + e)
+    }
+  }
+  if (didSendMessage) { console.log('Sent Data: ' + data['content']); }
   dataChannelSend.value = '';
   insertMessageToDOM(data, true);
 }
@@ -338,6 +277,78 @@ function insertMessageToDOM(options, isFromMe) {
   dataChannelReceive.scrollTop = dataChannelReceive.scrollHeight - dataChannelReceive.clientHeight;
 }
 
+// --- Handle callers leaving ---
+
+function handleRemoteStreamRemoved(event) {
+  console.log('Remote stream removed. Event: ', event);
+  remoteVideo.srcObject.remove
+}
+
+function handleRemoteHangup(socketId) {
+  console.log('Remote socket ' + socketId + ' ended their call.');
+  stop(socketId);
+}
+
+// TODO: Gracefully handle stream disconnecting by removing the leavers video stream.
+function stop(socketId) {
+  console.log('Stopping stream from socket: ' + socketId);
+  peerConnections[socketId].close();
+  delete peerConnections[socketId];
+  delete dataChannels[socketId];
+  if (peerConnections.length === 0) {
+    isStarted = false;
+    // TODO: Currently only shifting isInitiator when all other callers have left. Think about if that's ok.
+    isInitiator = true;
+  }
+}
+
+// --- Utils ---
+
+function randomToken() {
+  return Math.floor((1 + Math.random()) * 1e16).toString(16).substring(1);
+}
+
+// --- Window functions ---
+
 window.onbeforeunload = function() {
-  sendMessage('bye', room);
-};
+  sendMessage('bye');
+}
+
+// TODO: Configure and add a TURN server
+// 
+// var turnReady;
+// 
+// if (location.hostname !== '192.168.1.100') {
+//   requestTurn(
+//     'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
+//   );
+// }
+// 
+// function requestTurn(turnURL) {
+//   var turnExists = false;
+//   for (var i in pcConfig.iceServers) {
+//     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
+//       turnExists = true;
+//       turnReady = true;
+//       break;
+//     }
+//   }
+//   if (!turnExists) {
+//     console.log('Getting TURN server from ', turnURL);
+//     // No TURN server. Get one from computeengineondemand.appspot.com:
+//     var xhr = new XMLHttpRequest();
+//     xhr.onreadystatechange = function() {
+//       if (xhr.readyState === 4 && xhr.status === 200) {
+//         var turnServer = JSON.parse(xhr.responseText);
+//         console.log('Got TURN server: ', turnServer);
+//         pcConfig.iceServers.push({
+//           'urls': 'turn:' + turnServer.username + '@' + turnServer.turn,
+//           'credential': turnServer.password
+//         });
+//         turnReady = true;
+//       }
+//     };
+//     xhr.open('GET', turnURL, true);
+//     xhr.send();
+//   }
+// }

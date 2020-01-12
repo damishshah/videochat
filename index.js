@@ -33,9 +33,14 @@ io.sockets.on('connection', function(socket) {
     for (var room in socket.rooms) {
       if (room !== socket.id) {
         log('Socket ', socket.id, ' broadcasting to room ', room);
-        socket.broadcast.to(room).emit('message', message);
+        socket.broadcast.to(room).emit('message', {content: message, socketId: socket.id});
       }
     }
+  });
+
+  socket.on('messagePeer', function(message) {
+    console.log('Client said the following to ' + message.recipient + ': ', message.content);
+    socket.broadcast.to(message.recipient).emit('message', {content: message.content, socketId: socket.id});
   });
 
   socket.on('create or join', function(room) {
@@ -48,19 +53,19 @@ io.sockets.on('connection', function(socket) {
     } else {
       log('Room ' + room + ' currently has ' + numClients + ' client(s)');
     }
-    var maxClients = 3;
+    var maxClients = 2;
 
     if (numClients === 0) {
       socket.join(room);
       log('Client ID ' + socket.id + ' created room ' + room);
       socket.emit('created', room, socket.id);
-    } else if (numClients > 0) {
+    } else if (numClients > 0 && numClients < maxClients) {
       log('Client ID ' + socket.id + ' joined room ' + room);
       io.sockets.in(room).emit('join', room);
       socket.join(room);
-      socket.emit('joined', room, socket.id);
+      socket.emit('joined', {name: room, members: Object.keys(clientsInRoom.sockets).filter(function(key) {return key != socket.id})});
       io.sockets.in(room).emit('ready');
-    } else if (numClients > maxClients) {
+    } else if (numClients >= maxClients) {
       socket.emit('full', room);
     }
   });
