@@ -10,4 +10,4 @@ Simple WebRTC video conferencing application
 
 ### Done
 
-1. Make chat collapsible and appear over the video window
+1. Make chat collapsible
