@@ -9,6 +9,10 @@
   </head>
 
   <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+
     <h1 style="display: inline;">Video Chat With WebRTC</h1>
 
     <div class="content">
@@ -19,7 +23,9 @@
         </div>
       </div>
 
-      <div id="test"  style="position: relative; margin:10px">
+      <div id="root"></div>
+
+      <!-- <div id="chatWindow"  style="position: relative; margin:10px">
         <div style="font-style: oblique;">
           Your name: <input id="name" type="text" placeholder="Enter your name here">
         </div>
@@ -32,7 +38,7 @@
             <button type="submit">Send</button>
           </form>
         </div>
-      </div>
+      </div> -->
 
       <template data-template="message">
         <div class="message">
@@ -41,10 +47,17 @@
         </div>
       </template>
     </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 
-    <script src="js/stunservers.js"></script>
-    <script src="js/main.js"></script>
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+    <!-- <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>   -->
+
+    <!-- <script type="text/babel" src="js/sidebar.js"></script> -->
+    <!-- <script type="text/babel" src="js/reactcomponents.js"></script> -->
+    <!-- <script src="js/stunservers.js"></script> -->
+    <!-- <script src="js/main.js"></script> -->
+    <script type="module" src="dist/client.bundle.js"></script>
   </body>
 </html>

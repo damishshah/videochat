@@ -1,3 +1,4 @@
+import { connect } from 'socket.io-client';
 'use strict';
 
 var isChannelReady = false;
@@ -15,9 +16,21 @@ var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
 var nameInput = document.getElementById('name');
 
+const chatWindow = document.querySelector('#chatWindow');
+
+// TODO: Get this list from our server
+// Using more than two STUN/TURN servers slows down discovery
+var stunServerList = [  'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302',
+                    // 'stun:stun2.l.google.com:19302',
+                    // 'stun:stun3.l.google.com:19302',
+                    // 'stun:stun4.l.google.com:19302',
+                    // 'stun:stunserver.org:3478'
+                  ];
+
 var pcConfig = {
   'iceServers': [{
-    'urls': getStunServerList()
+    'urls': stunServerList
   }]
 };
 
@@ -34,7 +47,7 @@ if (!room) {
 
 // --- Handle socket setup ---
 
-var socket = io.connect();
+var socket = connect();
 
 socket.on('created', function(room, clientId) {
   console.log('Created room', room, '- my client ID is', clientId);
@@ -229,10 +242,11 @@ function setupDataChannel(dataChannel) {
   };
 }
 
-function sendData() {
+export function sendData(name, text) {
+  console.log("Sending text \"" + text+ "\" from \"" + name + "\"");
   const data = {
-    name: nameInput.value,
-    content: dataChannelSend.value
+    name: name,
+    content: text
   }
   var didSendMessage = false;
   for (var dc in dataChannels) {
@@ -243,9 +257,11 @@ function sendData() {
       console.error('Error while trying to send message: ' + e)
     }
   }
-  if (didSendMessage) { console.log('Sent Data: ' + data['content']); }
-  dataChannelSend.value = '';
-  insertMessageToDOM(data, true);
+  // dataChannelSend.value = '';
+  if (didSendMessage) { 
+    console.log('Sent Data: ' + JSON.stringify(data)); 
+    insertMessageToDOM(data, true);
+  }
 }
 
 function onReceiveMessageCallback(event) {
@@ -254,6 +270,7 @@ function onReceiveMessageCallback(event) {
 }
 
 function insertMessageToDOM(options, isFromMe) {
+  console.log("Trying to insert text \"" + options.content + "\" from \"" + options.name + "\" into DOM.");
   const template = document.querySelector('template[data-template="message"]');
   const nameEl = template.content.querySelector('.message__name');
   if (options.name && (lastMessageName === null || lastMessageName !== options.name)) {

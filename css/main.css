@@ -89,7 +89,7 @@ button {
   font-size: 16px;
   cursor: pointer;
 }
-#test {
+#chatWindow {
   display: flex;
   justify-content: space-between;
   flex-direction: column;
