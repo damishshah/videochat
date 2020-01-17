@@ -9,17 +9,18 @@
   </head>
 
   <body>
-    <h1 style="display: inline;">Video Chat With WebRTC</h1>
+    <h1 style="display: inline;">Video Chat With WebRTC</h1> 
+    <button style="float: right; cursor: pointer; padding: 5px 23px; text-align: center;" onclick="toggleHideChat()">Toggle Chat ></button>
 
     <div class="content">
-      <div id="videos" style="position: relative; width: 75vw; margin:10px; float: left;" >
-        <video id="remoteVideo" style="width: 100%; background-color: black;" autoplay>Your browser does not support HTML5 video.</video>
+      <div id="videos">
+        <video id="remoteVideo" autoplay>Your browser does not support HTML5 video.</video>
         <div id="nestedVideos">
           <video id="localVideo" autoplay muted>Your browser does not support HTML5 video.</video>
         </div>
       </div>
 
-      <div id="test"  style="position: relative; margin:10px">
+      <div id="chatWindow">
         <div style="font-style: oblique;">
           Your name: <input id="name" type="text" placeholder="Enter your name here">
         </div>
@@ -29,7 +30,7 @@
           </div>
           <form class="footer" onsubmit="sendData()">
             <input id="dataChannelSend" type="text" placeholder="Your message..">
-            <button type="submit">Send</button>
+            <button id="sendButton" type="submit">Send</button>
           </form>
         </div>
       </div>

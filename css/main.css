@@ -2,22 +2,28 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
-  height: 100vh;
+  height: calc(100vh - 50px);;
 }
 .content {
   display: flex;
   flex-direction: row;
-  padding:5px;
-}
-video {
-  right: 0;
-  /* padding: 5px 5px; */
-  position: absolute;
-  /* width: 100%; */
+  padding: 5px;
   height: 100%;
 }
+#videos {
+  flex: 1;
+  position: relative; 
+  height: 100%;
+  max-height: 100%;
+  background-color: black;
+  text-align: center;
+}
+#remoteVideo {
+  height: 100%;
+  margin: 0 auto;
+  display: inline-block;
+}
 #localVideo {
-  /* width: 30%; */
   height: 30%;
   position: absolute;
   bottom: 0;
@@ -29,8 +35,8 @@ video {
 .messaging {
   box-shadow: rgba(156, 172, 172, 0.2) 0px 2px 2px, rgba(156, 172, 172, 0.2) 0px 4px 4px, rgba(156, 172, 172, 0.2) 0px 8px 8px, rgba(156, 172, 172, 0.2) 0px 16px 16px, rgba(156, 172, 172, 0.2) 0px 32px 32px, rgba(156, 172, 172, 0.2) 0px 64px 64px;
   border-radius: 1px;
-  height: 100vh;
-  max-height: 600px;
+  height: calc(100% - 21px);
+  max-height: calc(100% - 21px);
   float: right;
   max-width: 400px;
   display: flex;
@@ -82,15 +88,16 @@ input {
   font-size: 16px;
   background: transparent;
 }
-button {
+#sendButton {
   border: none;
   background: transparent;
   padding: 0 30px;
   font-size: 16px;
   cursor: pointer;
 }
-#test {
-  display: flex;
+#chatWindow {
   justify-content: space-between;
   flex-direction: column;
+  position: relative; 
+  margin:10px;
 }

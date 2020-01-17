@@ -14,6 +14,15 @@ var remoteVideo = document.querySelector('#remoteVideo');
 var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
 var nameInput = document.getElementById('name');
+var chatWindow = document.querySelector('#chatWindow');
+
+function toggleHideChat() {
+  if (chatWindow.style.display === "none") {
+    chatWindow.style.display = "block";
+  } else {
+    chatWindow.style.display = "none";
+  }
+}
 
 var pcConfig = {
   'iceServers': [{
@@ -243,9 +252,11 @@ function sendData() {
       console.error('Error while trying to send message: ' + e)
     }
   }
-  if (didSendMessage) { console.log('Sent Data: ' + data['content']); }
-  dataChannelSend.value = '';
-  insertMessageToDOM(data, true);
+  if (didSendMessage) { 
+    console.log('Sent Data: ' + data['content']); 
+    insertMessageToDOM(data, true);
+    dataChannelSend.value = '';
+  }
 }
 
 function onReceiveMessageCallback(event) {
