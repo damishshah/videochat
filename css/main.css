@@ -38,7 +38,7 @@ input:focus, button:focus, textarea:focus, select:focus{
   display: none;
 }
 #localVideo {
-  height: 30%;
+  height: 35%;
   position: absolute;
   bottom: 0;
   right: 1px;
