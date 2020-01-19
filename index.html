@@ -10,9 +10,10 @@
   <body>
     <h1 style="display: inline;">Secure Video Chat With WebRTC</h1> 
     <button style="float: right; cursor: pointer; padding: 5px 23px;" onclick="toggleHideChat()">Toggle Chat ></button>
+    <button style="float: right; cursor: pointer; padding: 5px 23px;" onclick="toggleFullscreen()">Toggle Fullscreen</button>
 
     <div class="content">
-      <div id="videos">
+      <div id="videos" tabindex="0">
         <div id="remoteVideos">
           <video id="remoteVideo" class="remoteVideo" autoplay>Your browser does not support HTML5 video.</video>
         </div>
