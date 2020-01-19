@@ -5,6 +5,7 @@ var nodeStatic = require('node-static');
 var https = require('https');
 var socketIO = require('socket.io');
 const fs = require('fs');
+const maxClients = 3;
 
 // TODO: Get a proper cert
 const options = {
@@ -53,7 +54,6 @@ io.sockets.on('connection', function(socket) {
     } else {
       log('Room ' + room + ' currently has ' + numClients + ' client(s)');
     }
-    var maxClients = 2;
 
     if (numClients === 0) {
       socket.join(room);

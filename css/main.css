@@ -2,35 +2,60 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
-  height: calc(100vh - 50px);;
+  height: calc(100vh - 50px);
+  max-width: 100vw;
 }
 .content {
   display: flex;
   flex-direction: row;
   padding: 5px;
   height: 100%;
+  max-width: 100%;
 }
+input:focus, button:focus, textarea:focus, select:focus{
+  outline: none;
+}
+
+/* Video CSS */
 #videos {
-  flex: 1;
+  flex: 1 1 auto;
   position: relative; 
-  height: 100%;
   max-height: 100%;
   background-color: black;
   text-align: center;
+  min-width: 0;
 }
-#remoteVideo {
+#remoteVideos {
+  display:flex;
+  overflow: auto;
+  height: 100%;
+}
+.remoteVideo {
+  min-height: 0;
+  min-width: 0;
   height: 100%;
   margin: 0 auto;
-  display: inline-block;
+  display: none;
 }
 #localVideo {
   height: 30%;
   position: absolute;
   bottom: 0;
-  right: 0;
+  right: 1px;
   margin: 0;
   padding: 0;
   z-index: 1;
+}
+
+/* Messaging CSS */
+#chatWindow {
+  justify-content: space-between;
+  flex-direction: column;
+  position: relative; 
+  margin:10px;
+}
+#name {
+  height: 30px;
 }
 .messaging {
   box-shadow: rgba(156, 172, 172, 0.2) 0px 2px 2px, rgba(156, 172, 172, 0.2) 0px 4px 4px, rgba(156, 172, 172, 0.2) 0px 8px 8px, rgba(156, 172, 172, 0.2) 0px 16px 16px, rgba(156, 172, 172, 0.2) 0px 32px 32px, rgba(156, 172, 172, 0.2) 0px 64px 64px;
@@ -65,7 +90,7 @@ body {
   border-radius: 1px;
 }
 .message--theirs .message__bubble {
-  background: #6363bf;
+  background: #4c9ac7;
   color: white;
 }
 .message--mine .message__bubble {
@@ -76,9 +101,6 @@ body {
   border-top: 1px solid rgba(156, 172, 172, 0.2);
   display: flex;
   flex-shrink: 0;
-}
-#name {
-  height: 30px;
 }
 input {
   height: 76px;
@@ -94,10 +116,4 @@ input {
   padding: 0 30px;
   font-size: 16px;
   cursor: pointer;
-}
-#chatWindow {
-  justify-content: space-between;
-  flex-direction: column;
-  position: relative; 
-  margin:10px;
 }

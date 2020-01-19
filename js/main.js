@@ -11,18 +11,12 @@ var membersAtTimeOfJoining;
 
 var localVideo = document.querySelector('#localVideo');
 var remoteVideo = document.querySelector('#remoteVideo');
+var remoteVideos = document.querySelector('#remoteVideos');
 var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
 var nameInput = document.getElementById('name');
 var chatWindow = document.querySelector('#chatWindow');
-
-function toggleHideChat() {
-  if (chatWindow.style.display === "none") {
-    chatWindow.style.display = "block";
-  } else {
-    chatWindow.style.display = "none";
-  }
-}
+var remoteVideoObjectMap = new Map();
 
 var pcConfig = {
   'iceServers': [{
@@ -91,14 +85,14 @@ socket.on('message', function(message) {
   } else if (message.content.type === 'answer' && isStarted) {
     peerConnections[message.socketId].setRemoteDescription(new RTCSessionDescription(message.content));
     console.log("Set answer from socket id: " + message.socketId);
-    console.log(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
+    console.debug(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
   } else if (message.content.type === 'candidate' && isStarted) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.content.label,
       candidate: message.content.candidate
     });
     peerConnections[message.socketId].addIceCandidate(candidate);
-    console.log(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
+    console.debug(message.socketId + " connectionState: " + peerConnections[message.socketId].connectionState + " signalState: " + peerConnections[message.socketId].signalingState)
   } else if (message.content === 'bye' && isStarted) {
     handleRemoteHangup(message.socketId);
   }
@@ -116,7 +110,7 @@ if (location.hostname.match(/localhost|127\.0\.0|192\.168\.1/)) {
   socket.emit('ipaddr');
 }
 
-function sendMessage(message) {
+function sendMessageToRoom(message) {
   console.log('Client sending message: ', message);
   socket.emit('message', message);
 }
@@ -124,6 +118,14 @@ function sendMessage(message) {
 function messagePeer(socketId, message) {
   console.log('Client sending message to peer ' + socketId + ': ', message )
   socket.emit('messagePeer', {recipient: socketId, content: message})
+}
+
+function toggleHideChat() {
+  if (chatWindow.style.display === "none") {
+    chatWindow.style.display = "block";
+  } else {
+    chatWindow.style.display = "none";
+  }
 }
 
 function setupUserMedia() {
@@ -146,7 +148,6 @@ function gotStream(stream) {
     for (var i=0; i<membersAtTimeOfJoining.length; i++) {
       var currentMember = membersAtTimeOfJoining[i]
       peerConnections[currentMember] = createPeerConnection();
-      // var dataChannel = createDataChannel(peerConnections[membersAtTimeOfJoining[i]]);
       var dataChannel = peerConnections[currentMember].createDataChannel('chat');
       setupDataChannel(dataChannel);
       dataChannels[currentMember] = dataChannel;
@@ -161,8 +162,8 @@ function createPeerConnection() {
     var pc = new RTCPeerConnection(pcConfig);
     pc.addStream(localStream);
     pc.onicecandidate = handleIceCandidate;
-    pc.ontrack = handleRemoteStreamAdded;
-    pc.onremovetrack = handleRemoteStreamRemoved;
+    pc.ontrack = handleRemoteTrackAdded;
+    pc.oniceconnectionstatechange = handleIceConnectionStateChange;
     console.log('Created RTCPeerConnnection');
     return pc;
   } catch (e) {
@@ -175,7 +176,7 @@ function createPeerConnection() {
 function handleIceCandidate(event) {
   console.log('icecandidate event: ', event);
   if (event.candidate) {
-    sendMessage({
+    sendMessageToRoom({
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
       id: event.candidate.sdpMid,
@@ -183,6 +184,13 @@ function handleIceCandidate(event) {
     });
   } else {
     console.log('End of candidates.');
+  }
+}
+
+function handleIceConnectionStateChange(event) {
+  if(event.target.iceConnectionState == 'disconnected') {
+    console.debug('Peer disconnected.');
+    cleanUpPeerConnection(event.target);
   }
 }
 
@@ -196,7 +204,7 @@ function doCall(id) {
 }
 
 function handleCreateOfferError(event) {
-  console.log('createOffer() error: ', event);
+  console.error('createOffer() error: ', event);
 }
 
 function doAnswer(id) {
@@ -209,12 +217,25 @@ function doAnswer(id) {
 }
 
 function onCreateSessionDescriptionError(error) {
-  console.log('Failed to create session description: ' + error.toString());
+  console.error('Failed to create session description: ' + error.toString());
 }
 
-function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
-  remoteVideo.srcObject = event.streams[0];
+function handleRemoteTrackAdded(event) {
+  console.log('Remote track added. ' + event.target);
+  if (!remoteVideoObjectMap.has(event.target)) {
+    var newRemoteVideo = createNewDOMVideoNode(event);
+    remoteVideoObjectMap.set(event.target, newRemoteVideo);
+  } else {
+    remoteVideoObjectMap.get(event.target).srcObject = event.streams[0];
+  }
+}
+
+function createNewDOMVideoNode(event) {
+  var newRemoteVideo = remoteVideo.cloneNode(true);
+  newRemoteVideo.style.display = 'inline-block';
+  newRemoteVideo.srcObject = event.streams[0];
+  remoteVideos.appendChild(newRemoteVideo);
+  return newRemoteVideo;
 }
 
 // --- Functions related to data channels & messaging ---
@@ -290,20 +311,9 @@ function insertMessageToDOM(options, isFromMe) {
 
 // --- Handle callers leaving ---
 
-function handleRemoteStreamRemoved(event) {
-  console.log('Remote stream removed. Event: ', event);
-  remoteVideo.srcObject.remove
-}
-
 function handleRemoteHangup(socketId) {
-  console.log('Remote socket ' + socketId + ' ended their call.');
-  stop(socketId);
-}
-
-// TODO: Gracefully handle stream disconnecting by removing the leavers video stream.
-function stop(socketId) {
-  console.log('Stopping stream from socket: ' + socketId);
-  peerConnections[socketId].close();
+  console.log('Remote socket ' + socketId + ' ended their call. Stopping stream from socket.');
+  cleanUpPeerConnection(peerConnections[socketId]);
   delete peerConnections[socketId];
   delete dataChannels[socketId];
   if (peerConnections.length === 0) {
@@ -311,6 +321,26 @@ function stop(socketId) {
     // TODO: Currently only shifting isInitiator when all other callers have left. Think about if that's ok.
     isInitiator = true;
   }
+}
+
+// This function also gets called on a state change to 'disconnected' from a peer. I added this event handling 
+//  in case of server issues that would prevent a bye message from being received. Server messaging is preferred
+//  since there can be a delay of ~5 for the connection state change to reach this peer through webrtc.
+//
+//  TODO: Figure out a way to clean up the in-memory storage for this PC without a socket id from the server. 
+function cleanUpPeerConnection(pc) {
+  if (remoteVideoObjectMap.has(pc)) {
+    removeVideoElement(remoteVideoObjectMap.get(pc));
+    remoteVideoObjectMap.delete(pc);
+  }
+  pc.close();
+}
+
+function removeVideoElement(videoElement) {
+  videoElement.pause();
+  videoElement.removeAttribute('src');
+  videoElement.load();
+  videoElement.parentNode.removeChild(videoElement);
 }
 
 // --- Utils ---
@@ -322,7 +352,7 @@ function randomToken() {
 // --- Window functions ---
 
 window.onbeforeunload = function() {
-  sendMessage('bye');
+  sendMessageToRoom('bye');
 }
 
 // TODO: Configure and add a TURN server
