@@ -1,6 +1,7 @@
 'use strict';
 
-var isChannelReady = false;
+import getStunServerList from './stunservers.js';
+
 var isInitiator = false;
 var isStarted = false;
 var peerConnections = {};
@@ -16,6 +17,9 @@ var dataChannelSend = document.getElementById('dataChannelSend');
 var dataChannelReceive = document.getElementById('dataChannelReceive');
 var nameInput = document.getElementById('name');
 var chatWindow = document.querySelector('#chatWindow');
+var footer = document.querySelector('#footer');
+var toggleChatButton = document.querySelector('#toggleChat');
+var toggleFullscreenButton = document.querySelector('#toggleFullscreen');
 var remoteVideoObjectMap = new Map();
 
 var pcConfig = {
@@ -24,7 +28,6 @@ var pcConfig = {
   }]
 };
 
-// Currently sets up audio and video regardless of what devices are present.
 var sdpConstraints = {
   offerToReceiveAudio: true,
   offerToReceiveVideo: true
@@ -52,14 +55,12 @@ socket.on('full', function(room) {
 
 socket.on('join', function (room) {
   console.log('Another peer made a request to join room ' + room);
-  isChannelReady = true;
 });
 
 socket.on('joined', function(room) {
   console.log('joined: ' + room.name);
   console.log('members: ' + room.members);
   membersAtTimeOfJoining = room.members;
-  isChannelReady = true;
   setupUserMedia();
 });
 
@@ -67,6 +68,7 @@ socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
+// TODO: Candidate for refactor.
 // This client receives a message
 socket.on('message', function(message) {
   console.log('Client received message:', message);
@@ -120,14 +122,6 @@ function messagePeer(socketId, message) {
   socket.emit('messagePeer', {recipient: socketId, content: message})
 }
 
-function toggleHideChat() {
-  if (chatWindow.style.display === "none") {
-    chatWindow.style.display = "block";
-  } else {
-    chatWindow.style.display = "none";
-  }
-}
-
 function setupUserMedia() {
   navigator.mediaDevices.getUserMedia({
     audio: true,
@@ -148,7 +142,7 @@ function gotStream(stream) {
     for (var i=0; i<membersAtTimeOfJoining.length; i++) {
       var currentMember = membersAtTimeOfJoining[i]
       peerConnections[currentMember] = createPeerConnection();
-      var dataChannel = peerConnections[currentMember].createDataChannel('chat');
+      var dataChannel = createDataChannel(peerConnections[currentMember]);
       setupDataChannel(dataChannel);
       dataChannels[currentMember] = dataChannel;
       doCall(currentMember);
@@ -194,6 +188,7 @@ function handleIceConnectionStateChange(event) {
   }
 }
 
+// Creates a webrtc offer and sends it
 function doCall(id) {
   console.log('Sending offer to peer');
   peerConnections[id].createOffer(sdpConstraints).then(function(offer) {
@@ -207,6 +202,7 @@ function handleCreateOfferError(event) {
   console.error('createOffer() error: ', event);
 }
 
+// Creates a webrtc answer and sends it
 function doAnswer(id) {
   console.log('Sending answer to peer.');
   peerConnections[id].createAnswer().then(function(answer) {
@@ -239,6 +235,8 @@ function createNewDOMVideoNode(event) {
 }
 
 // --- Functions related to data channels & messaging ---
+
+footer.onsubmit = sendData;
 
 function createDataChannel(peerConnection) {
   try {
@@ -318,8 +316,6 @@ function handleRemoteHangup(socketId) {
   delete dataChannels[socketId];
   if (peerConnections.length === 0) {
     isStarted = false;
-    // TODO: Currently only shifting isInitiator when all other callers have left. Think about if that's ok.
-    isInitiator = true;
   }
 }
 
@@ -351,9 +347,20 @@ function randomToken() {
 
 // --- Window functions ---
 
+toggleChatButton.onclick = toggleChat;
+
+function toggleChat() {
+  if (chatWindow.style.display === "none") {
+    chatWindow.style.display = "block";
+  } else {
+    chatWindow.style.display = "none";
+  }
+}
+
 var videosElement = document.querySelector("#videos");
 videosElement.onkeydown = videosElementOnKeyDownHandler;
 videosElement.ondblclick = toggleFullscreen;
+toggleFullscreenButton.onclick = toggleFullscreen;
 
 function videosElementOnKeyDownHandler(event) {
   console.debug("Received key: " + event.keyCode);
@@ -422,7 +429,7 @@ function dragElement(elmnt) {
   }
 }
 
-// TODO: Configure and add a TURN server
+// NOTE: Turn servers cost money. Code is written here for completeness, but will likely never be added to this application.
 // 
 // var turnReady;
 // 

@@ -9,8 +9,8 @@
 
   <body>
     <h1 style="display: inline;">Secure Video Chat With WebRTC</h1> 
-    <button style="float: right; cursor: pointer; padding: 5px 23px;" onclick="toggleHideChat()">Toggle Chat ></button>
-    <button style="float: right; cursor: pointer; padding: 5px 23px;" onclick="toggleFullscreen()">Toggle Fullscreen</button>
+    <button id="toggleChat" class="uiButton">Toggle Chat ></button>
+    <button id="toggleFullscreen" class="uiButton">Toggle Fullscreen</button>
 
     <div class="content">
       <div id="videos" tabindex="0">
@@ -26,7 +26,7 @@
         </div>
         <div class="messaging">
           <div id="dataChannelReceive" class="messages"></div>
-          <form class="footer" onsubmit="sendData()">
+          <form id="footer">
             <input id="dataChannelSend" type="text" autocomplete="off" placeholder="Your message..">
             <button id="sendButton" type="submit">Send</button>
           </form>
@@ -45,7 +45,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <!-- Mine -->
-    <script src="js/stunservers.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/stunservers.js"></script>
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

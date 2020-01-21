@@ -7,7 +7,6 @@ body {
 }
 .content {
   display: flex;
-  flex-direction: row;
   padding: 5px;
   height: 100%;
   max-width: 100%;
@@ -27,7 +26,6 @@ input:focus, button:focus, textarea:focus, select:focus{
 }
 #remoteVideos {
   display:flex;
-  overflow: auto;
   height: 100%;
 }
 .remoteVideo {
@@ -46,6 +44,13 @@ input:focus, button:focus, textarea:focus, select:focus{
   padding: 0;
   z-index: 1;
   resize: both;
+}
+
+/* UI Control CSS */
+.uiButton {
+  float: right; 
+  cursor: pointer; 
+  padding: 5px 23px;
 }
 
 /* Messaging CSS */
@@ -97,7 +102,7 @@ input:focus, button:focus, textarea:focus, select:focus{
 .message--mine .message__bubble {
   background: rgba(156, 172, 172, 0.2);
 }
-.footer {
+#footer {
   line-height: 76px;
   border-top: 1px solid rgba(156, 172, 172, 0.2);
   display: flex;

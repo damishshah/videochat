@@ -3,7 +3,11 @@ Simple WebRTC video conferencing application
 
 ### Things to do
 
-1. Allow user to move and resize their local preview window
+1. Set up js minification/bundling
+2. Write tests
+3. Setup automated docker build + deployment to ec2
+4. Setup SSL cert
+5. Setup Google DNS routing to ec2
 
 ### Done
 
@@ -11,3 +15,4 @@ Simple WebRTC video conferencing application
 2. Add multiple peer connections
 3. Gracefully handle callers leaving
 4. Allow fullscreen of videos
+5. Allow user to move their local preview window

@@ -19,8 +19,6 @@ var app = https.createServer(options, function(req, res) {
 }).listen(8080);
 
 var io = socketIO.listen(app);
-// TODO: Implement proper cors headers
-io.set('origins', '*:*');
 io.sockets.on('connection', function(socket) {
 
   function log() {
