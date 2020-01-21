@@ -3,11 +3,10 @@ Simple WebRTC video conferencing application
 
 ### Things to do
 
-1. Setup docker
-2. Write tests
-3. Setup automated docker build + deployment to ec2
-4. Setup SSL cert
-5. Setup Google DNS routing to ec2
+1. Write tests
+2. Setup ec2 instance + watchtower
+3. Setup SSL cert
+4. Setup Google DNS routing to ec2
 
 ### Done
 
@@ -19,3 +18,5 @@ Simple WebRTC video conferencing application
 
 Operational Tasks:
 1. Set up js minification/bundling
+2. Setup docker
+3. Setup automated docker builds
