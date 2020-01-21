@@ -20,7 +20,9 @@ var chatWindow = document.querySelector('#chatWindow');
 var footer = document.querySelector('#footer');
 var toggleChatButton = document.querySelector('#toggleChat');
 var toggleFullscreenButton = document.querySelector('#toggleFullscreen');
+
 var remoteVideoObjectMap = new Map();
+var io = require('socket.io-client');
 
 var pcConfig = {
   'iceServers': [{

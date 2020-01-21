@@ -3,7 +3,7 @@ Simple WebRTC video conferencing application
 
 ### Things to do
 
-1. Set up js minification/bundling
+1. Setup docker
 2. Write tests
 3. Setup automated docker build + deployment to ec2
 4. Setup SSL cert
@@ -16,3 +16,6 @@ Simple WebRTC video conferencing application
 3. Gracefully handle callers leaving
 4. Allow fullscreen of videos
 5. Allow user to move their local preview window
+
+Operational Tasks:
+1. Set up js minification/bundling
