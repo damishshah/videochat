@@ -2,19 +2,13 @@
 
 var os = require('os');
 var nodeStatic = require('node-static');
-var https = require('https');
+var http = require('http');
 var socketIO = require('socket.io');
 const fs = require('fs');
 const maxClients = 3;
 
-// TODO: Get a proper cert
-const options = {
-  key: fs.readFileSync('key.pem'),
-  cert: fs.readFileSync('cert.pem')
-};
-
 var fileServer = new(nodeStatic.Server)();
-var app = https.createServer(options, function(req, res) {
+var app = http.createServer(function(req, res) {
   fileServer.serve(req, res);
 }).listen(8080);
 
