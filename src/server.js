@@ -7,7 +7,7 @@ var socketIO = require('socket.io');
 const fs = require('fs');
 const maxClients = 3;
 
-var fileServer = new(nodeStatic.Server)();
+var fileServer = new nodeStatic.Server('./public');
 var app = http.createServer(function(req, res) {
   fileServer.serve(req, res);
 }).listen(8080);

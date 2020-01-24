@@ -18,8 +18,8 @@
   },
   "scripts": {
     "server": "node src/server.js",
-    "build:dev": "webpack --config webpack.dev.js",
-    "build:prod": "webpack --config webpack.prod.js",
+    "build:dev": "webpack --config ./webpack-conf/webpack.dev.js",
+    "build:prod": "webpack --config ./webpack-conf/webpack.prod.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
