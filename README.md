@@ -1,12 +1,12 @@
 # Video Chat
 Simple WebRTC video conferencing application
 
+### Infrastructure Package
+https://github.com/damishshah/videochat-infrastructure
+
 ### Things to do
 
 1. Write tests
-2. Setup ec2 instance + watchtower
-3. Setup SSL cert
-4. Setup Google DNS routing to ec2
 
 ### Done
 
@@ -19,4 +19,4 @@ Simple WebRTC video conferencing application
 Operational Tasks:
 1. Set up js minification/bundling
 2. Setup docker
-3. Setup automated docker builds
+3. Setup automated infrastructure package

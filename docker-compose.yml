@@ -45,18 +45,18 @@ services:
 volumes:
   certbot-etc:
   certbot-var:
-    web-root:
-        driver: local
-        driver_opts:
-          type: none
-          device: /home/ec2-user/html-for-letsencrypt/
-          o: bind
-      dhparam:
-        driver: local
-        driver_opts:
-          type: none
-          device: /home/ec2-user/dhparam/
-          o: bind
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/ec2-user/html-for-letsencrypt/
+      o: bind
+  dhparam:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/ec2-user/dhparam/
+      o: bind
 
 networks:
   app-network:
