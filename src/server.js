@@ -3,8 +3,7 @@
 var os = require('os');
 var nodeStatic = require('node-static');
 var http = require('http');
-var socketIO = require('socket.io');
-const fs = require('fs');
+var socketIO = require('socket.io')({path: '/chat/socket.io'});
 const maxClients = 3;
 
 var fileServer = new nodeStatic.Server();

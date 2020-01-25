@@ -1,6 +1,7 @@
 'use strict';
 
 import getStunServerList from './stunservers.js';
+import '../css/main.css';
 
 var isInitiator = false;
 var isStarted = false;
@@ -42,7 +43,7 @@ if (!room) {
 
 // --- Handle socket setup ---
 
-var socket = io.connect();
+var socket = io.connect({path: '/chat/socket.io'});
 
 socket.on('created', function(room, clientId) {
   console.log('Created room', room, '- my client ID is', clientId);

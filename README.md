@@ -6,7 +6,9 @@ https://github.com/damishshah/videochat-infrastructure
 
 ### Things to do
 
-1. Write tests
+2. Write tests
+3. Setup CD
+4. Decouple chat application from main webserver
 
 ### Done
 
@@ -20,3 +22,5 @@ Operational Tasks:
 1. Set up js minification/bundling
 2. Setup docker
 3. Setup automated infrastructure package
+4. Minify CSS
+5. Setup socket.io on chat path to prevent collision with other apps
