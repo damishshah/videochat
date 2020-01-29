@@ -1,26 +1,14 @@
 # Video Chat
-Simple WebRTC video conferencing application
+Secure WebRTC video conferencing application
 
-### Infrastructure Package
-https://github.com/damishshah/videochat-infrastructure
+# Running the app for development
+`npm install && npm run build:dev && npm run server`
 
-### Things to do
+# Running the app for production
+`npm install && npm run build:prod && npm run server`
 
-2. Write tests
-3. Setup CD
-4. Decouple chat application from main webserver
+*Note here, to run the service with docker-compose you'll need to run the webserver infrastructure package from this [link](https://github.com/damishshah/webserver-infrastructure). This infrastructure package runs an instance of nginx and can help you set up an automated certbot to acquire an certs from letsencrypt for your website. It also sets up the docker network that the docker-compose file in this package depends on. 
 
-### Done
+# Accessing the app
+http://localhost:8080
 
-1. Make chat collapsible
-2. Add multiple peer connections
-3. Gracefully handle callers leaving
-4. Allow fullscreen of videos
-5. Allow user to move their local preview window
-
-Operational Tasks:
-1. Set up js minification/bundling
-2. Setup docker
-3. Setup automated infrastructure package
-4. Minify CSS
-5. Setup socket.io on chat path to prevent collision with other apps
