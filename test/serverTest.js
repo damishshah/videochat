@@ -10,6 +10,7 @@ const connectOpts = {
   };
 
 const test_room_id = 'test_room_id';
+const test_message = 'This is a test message.';
 var connectionsList = [];
 
 describe('Test Suite', function() {
@@ -42,8 +43,6 @@ describe('Test Suite', function() {
     it('Test second client joins room', function(done) {
       socket.emit('create or join', test_room_id);
       socket.on('created', async function(roomId, firstSocketId) {
-        should.equal(test_room_id, roomId)
-        should.equal(socket.id, firstSocketId);
         await testNewConnection();
         done();
       });
@@ -52,8 +51,6 @@ describe('Test Suite', function() {
     it('Test client joins full room', function(done) {
       socket.emit('create or join', test_room_id);
       socket.on('created', async function(roomId, firstSocketId) {
-        should.equal(test_room_id, roomId)
-        should.equal(socket.id, firstSocketId);
         await testNewConnection(); // Add second connection and ensure it connects
         await testNewConnection(); // Add third connection and ensure it connects
 
@@ -66,6 +63,56 @@ describe('Test Suite', function() {
       });
     });
 
+    it('Test client sends message to target peer', function(done) {
+      socket.emit('create or join', test_room_id);
+      socket.on('created', async function(roomId, firstSocketId) {
+        var secondConnection = await testNewConnection(); // Add second connection and ensure it connects
+
+        secondConnection.on('message', function(message) {
+          should.equal(socket.id, message.socketId);
+          should.equal(test_message, message.content);
+          done();
+        });
+
+        socket.emit('messagePeer', {recipient: secondConnection.id, content: test_message});
+      });
+    });
+
+
+    it('Test client sends message to room', function(done) {
+      socket.emit('create or join', test_room_id);
+      socket.on('created', async function(roomId, firstSocketId) {
+        var secondConnection = await testNewConnection(); // Add second connection and ensure it connects
+        var thirdConnection = await testNewConnection(); // Add third connection and ensure it connects
+
+        var secondConnectionReceivedMessage = false;
+        var thirdConnectionReceivedMessage = false;
+
+        secondConnection.on('message', function(message) {
+          should.equal(socket.id, message.socketId);
+          should.equal(test_message, message.content);
+          secondConnectionReceivedMessage = true;
+        });
+
+        thirdConnection.on('message', function(message) {
+          should.equal(socket.id, message.socketId);
+          should.equal(test_message, message.content);
+          thirdConnectionReceivedMessage = true;
+        });
+
+        socket.emit('message', test_message);
+
+        function resolveAfterMessagesReceived() {
+          if(!secondConnectionReceivedMessage || !thirdConnectionReceivedMessage) {
+            setTimeout(resolveAfterMessagesReceived, 10);
+            return;
+          }
+          done();
+        }
+
+        resolveAfterMessagesReceived();
+      });
+    });
   });
 });
 

@@ -24,7 +24,7 @@
     "server": "node src/server.js",
     "build:dev": "webpack --config ./webpack-conf/webpack.dev.js",
     "build:prod": "webpack --config ./webpack-conf/webpack.prod.js",
-    "test": "mocha --require coffeescript/register \"test/*.js\""
+    "test": "mocha --require coffeescript/register \"test/*.js\" --timeout 5000"
   },
   "repository": {
     "type": "git",
